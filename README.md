@@ -39,7 +39,8 @@ INFLUXDB_ADMIN_PASSWORD=admin
 ```shell
 docker-compose up
 ```
-接著去本地chronograf http://IP:8888設定influxdb以及kapacitor
+接著去本地chronograf `http://IP:8888`
+設定influxdb以及kapacitor
 * http:// IP :8086 for influxdb
 * http:// IP :9092 for kapacitor
 ![Alt text](./img/setup_influx.png)
