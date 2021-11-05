@@ -1,0 +1,114 @@
+// 選擇資料庫
+var db = 'telegraf'
+
+// 存儲策略，預設為無限大
+var rp = 'autogen'
+
+// 要查詢的measurement
+var measurement = 'cpu'
+
+var groupBy = *
+
+// 可使用正則去匹配我的機器
+var server = /.*/
+
+// 判斷式
+var whereFilter = lambda: ("cpu" == 'cpu-total') AND ("host" =~ server) AND isPresent("usage_idle")
+
+// select的值
+var selectValue = lambda: float(100.0 - "usage_idle")
+
+// 任務名稱
+var name = 'cpu-alert rule'
+
+// 將任務名稱儲存到 ID message template
+var idVar = name
+
+// 要顯示的訊息
+var message = 'task: {{ .ID }}
+status: {{ .Level}}
+Host: {{ index .Tags "host" }}  
+measurement: {{ index .Tags "cpu" }}
+cpu usage: {{ index .Fields "value" | printf "%0.1f" }}% 
+localtime: {{ .Time.Local }}'
+
+// 告警儲存到db的tag name
+var idTag = 'alertID'
+
+var levelTag = 'level'
+
+// 告警儲存到db的field name
+var messageField = 'message'
+
+var durationField = 'duration'
+
+// 告警儲存的db name
+var outputDB = 'chronograf'
+
+// 告警儲存的策略，預設為無限大
+var outputRP = 'autogen'
+
+// 告警儲存的measurement name
+var outputMeasurement = 'alerts'
+
+// 告警儲存的類型
+var triggerType = 'threshold'
+
+// threshold設定
+var crit = 1
+
+var warn = 2
+
+var info = 3
+
+// 查詢時間間隔，now()-10s
+var period = 10s
+
+// 查詢頻率，每10秒查詢一次
+var every = 10s
+
+// 要發送的telegram群組
+var chatId = ''
+
+var data = stream
+    |from()
+        .database(db)
+        .retentionPolicy(rp)
+        .measurement(measurement)
+        .groupBy(groupBy)
+        .where(whereFilter)
+    |eval(selectValue)
+        .as('value')
+    |window()
+        .period(period)
+        .every(every)
+
+var trigger = data
+    |alert()
+        .crit(lambda: "value" < crit)
+        .warn(lambda: "value" < warn)
+        .stateChangesOnly() //僅在狀態(OK,INFO,WARN,CRIT)改變時發送告警
+        .message(message)
+        .id(idVar)
+        .idTag(idTag)
+        .levelTag(levelTag)
+        .messageField(messageField)
+        .durationField(durationField)
+        .telegram()
+        .chatId(chatId)
+        .parseMode('Markdown')
+
+trigger
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
+
+trigger
+    |httpOut('output')
