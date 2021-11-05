@@ -1,0 +1,52 @@
+template-id: threshold_template
+dbrps:
+- db: kapacitor
+  rp: autogen
+vars:
+  name:
+    type: string
+    value: CPU異常
+  query:
+    type: string
+    value: SELECT 100-(usage_idle) as value FROM kapacitor.autogen.cpu WHERE  (cpu =~ /cpu-total/ ) ORDER BY DESC
+  period:
+    type: duration
+    value: 2m
+  every:
+    type: duration
+    value: 1m
+  groupBy:
+    type: list
+    value:
+    - type: star
+      value: "*"
+  warn:
+    type: lambda
+    value: 'float("value") > 90'
+  messageField:
+    type: string
+    value: message
+  message:
+    type: string
+    value: |
+      {{ if eq .Level "OK" }}異常恢復：{{ else }}異常告警：{{ end }}{{ .ID }}
+
+      {{ if eq .Level "OK" }}異常恢復時間：{{ else }}異常時間：{{ end }}{{ .Time.Local.Format "2006-01-02T15:04:05Z07:00" }}
+
+      主機：{{ index .Tags "host" }}
+
+      異常等級：{{ .Level}}
+
+      {{ if eq .Level "OK" }}恢復數值：{{ else }}異常數值：{{ end }}{{ index .Fields "value"  | printf "%0.0f"}}%
+  chatId:
+    type: string
+    value: 'chatid'
+  outputDB:
+    type: string
+    value: normal
+  outputMeasurement:
+    type: string
+    value: alerts
+  triggerType:
+    type: string
+    value: threshold

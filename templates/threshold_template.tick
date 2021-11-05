@@ -1,0 +1,97 @@
+// groupBy
+var groupBy list
+
+// name
+var name string
+
+// id
+var idVar = name
+
+// 告警message
+var message string
+
+// id存到influxdb的tag name
+var idTag = 'alertID'
+
+// level存到influxdb的tag name
+var levelTag = 'level'
+
+// message存到influxdb的field name
+var messageField string
+
+// duration存到influxdb的field name
+var durationField = 'duration'
+
+// 告警訊息輸出的db name
+var outputDB string
+
+// 存儲類型
+var outputRP = 'autogen'
+
+// 告警輸出measurement
+var outputMeasurement string
+
+// 告警類型
+var triggerType string
+
+// INFO等級的condition
+var info lambda
+
+// WARNING等級的condition
+var warn lambda
+
+// CRITICAL等級的condition
+var crit lambda
+
+// 要抓取的時間範圍
+var period duration
+
+// 查詢頻率
+var every duration
+
+// 要發送的telegram群組id
+var chatId string
+
+// 要下的query語法
+var query string
+
+// 要定義的crontab
+var cron = '* * * * *'
+
+
+var data = batch
+    |query(query)
+        .period(period)
+        .every(every)
+        .groupBy(groupBy)
+
+var trigger = data
+    |alert()
+        .info(info)
+        .warn(warn)
+        .crit(crit)
+        .stateChangesOnly()
+        .message(message)
+        .id(idVar)
+        .idTag(idTag)
+        .levelTag(levelTag)
+        .messageField(messageField)
+        .durationField(durationField)
+        .telegram()
+        .chatId(chatId)
+        .parseMode('Markdown')
+
+trigger
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
+
+trigger
+    |httpOut('output')

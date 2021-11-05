@@ -1,0 +1,102 @@
+var db = 'kapacitor'
+
+var rp = 'autogen'
+
+var measurement = 'cpu'
+
+var groupBy = *
+
+var server = /host.*/
+
+var now = /.*17:22.*/
+
+var whereFilter = lambda: ("cpu" == 'cpu-total') AND ("host" =~ server) AND isPresent("usage_idle") AND ("message" =~ now)
+
+var selectValue = lambda: float(100.0 - "usage_idle")
+
+var name = 'ＣＰＵ batch'
+
+var idVar = name
+
+var message = '{{ .Time.Local }}
+主機：{{ index .Tags "host" }}
+{{ index .Fields "value" | printf "%0.1f" }}%
+'
+
+var idTag = 'alertID'
+
+var levelTag = 'level'
+
+var messageField = 'message'
+
+var durationField = 'duration'
+
+var outputDB = 'chronograf1'
+
+var outputRP = 'autogen'
+
+var outputMeasurement = 'alerts'
+
+var triggerType = 'threshold'
+
+var crit = 100
+
+var warn = 2
+
+var info = 3
+
+var period = 90s
+
+var every = 5s
+
+
+var chatId = 'chat-bot-id'
+
+// WHERE "cpu" = 'cpu-total' AND "host" =~ /ipl-back.*/
+var query = '''
+        SELECT "value"
+        FROM "chronograf"."autogen"."alerts"
+        WHERE "cpu" = 'cpu-total' AND "host" =~ /ipl-back.*/ AND "message" =~ /.*17:22.*/ 
+        ORDER BY DESC
+        LIMIT 1
+        '''
+
+var data = batch
+    |query(query)
+        .period(10d)
+        .every(30s)
+        // .cron('*/2 * * * *')
+        .groupBy(*)
+
+// .offset(2m)
+
+// |shift(2m)
+var trigger = data
+    |alert()
+        .crit(lambda: "value" < crit)
+        // .warn(lambda: "value" < warn)
+        // .stateChangesOnly()
+        .message(message)
+        .id(idVar)
+        .idTag(idTag)
+        .levelTag(levelTag)
+        .messageField(messageField)
+        .durationField(durationField)
+        .telegram()
+        .chatId(chatId)
+        .parseMode('Markdown')
+
+trigger
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
+
+trigger
+    |httpOut('output')

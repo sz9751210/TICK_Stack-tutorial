@@ -1,0 +1,116 @@
+var db = 'kapacitor'
+
+var rp = 'autogen'
+
+var measurement = 'cpu'
+
+var groupBy = *
+
+var server = /.*/
+
+var whereFilter = lambda: ("cpu" == 'cpu-total') AND ("host" =~ server) AND isPresent("usage_idle")
+
+var selectValue = lambda: float(100.0 - "usage_idle")
+
+var name = 'ＣＰＵ batch relative crontab 每小時'
+
+var idVar = name
+
+var message = '{{ if eq .Level "OK" }}異常恢復：{{ else }}異常告警：{{ end }}{{ .ID }}
+
+{{ if eq .Level "OK" }}異常恢復時間：{{ else }}異常時間：{{ end }}{{ .Time.Local }}
+
+主機：{{ index .Tags "host" }}
+
+異常等級：{{ .Level}}
+
+{{ if eq .Level "OK" }}恢復數值：{{ else }}異常數值：{{ end }}{{ index .Fields "value" | printf "%0.0f" }}%
+'
+
+var idTag = 'alertID'
+
+var levelTag = 'level'
+
+var messageField = 'message'
+
+var durationField = 'duration'
+
+var outputDB = 'chronograf'
+
+var outputRP = 'autogen'
+
+var outputMeasurement = 'alerts'
+
+var triggerType = 'relative'
+
+var shift = 1h
+
+var crit = 100
+
+var warn = 2
+
+var info = 3
+
+var period = 30s
+
+var every = 10s
+
+var chatId = 'chatId'
+
+var current = batch
+    |query('''
+        SELECT 100-(usage_idle) as "value"
+        FROM "kapacitor"."autogen"."cpu"
+        WHERE "cpu" = 'cpu-total'
+        ''')
+        .period(period)
+        .cron('0 * * * *')
+        .groupBy(*)
+
+var past = batch
+    |query('''
+        SELECT 100-(usage_idle) as "value"
+        FROM "kapacitor"."autogen"."cpu"
+        WHERE "cpu" = 'cpu-total'
+        ''')
+        .period(period)
+        .cron('0 * * * *')
+        .groupBy(*)
+        .offset(shift)
+    |shift(shift)
+
+var trigger = past
+    |join(current)
+        .as('past', 'current')
+        .tolerance(1m)
+    // .fill(0.0)
+    |shift(period)
+    |eval(lambda: abs("current.value" - "past.value"))
+        .keep()
+        .as('value')
+    |alert()
+        .crit(lambda: "value" < crit)
+        .message(message)
+        .id(idVar)
+        .idTag(idTag)
+        .levelTag(levelTag)
+        .messageField(messageField)
+        .durationField(durationField)
+        .telegram()
+        .chatId(chatId)
+        .parseMode('Markdown')
+
+trigger
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
+
+trigger
+    |httpOut('output')
