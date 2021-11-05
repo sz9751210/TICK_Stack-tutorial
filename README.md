@@ -83,5 +83,9 @@ alert history可查看告警訊息
 ## 查看alert寫回db訊息
 ![Alt text](./img/chronograf.png)
 
+## 參考資料
+* https://github.com/sz9751210/docker-telegraf-influx-grafana-stack
+* https://www.influxdata.com/time-series-platform/kapacitor/
+* https://tanjiti.github.io/2018/12/18/%E5%BC%80%E6%BA%90kapacitor%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/
 
 
