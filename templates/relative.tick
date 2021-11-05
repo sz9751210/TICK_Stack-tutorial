@@ -47,7 +47,7 @@ var shift = 30m
 
 var crit = 100
 
-var chatId = '-573041493'
+var chatId = 'chatId'
 
 var period = 10s
 

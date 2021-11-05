@@ -31,7 +31,7 @@ var messageField = 'message'
 
 var durationField = 'duration'
 
-var outputDB = 'chronograf1'
+var outputDB = 'kapacitor'
 
 var outputRP = 'autogen'
 
@@ -52,11 +52,11 @@ var every = 5s
 
 var chatId = 'chat-bot-id'
 
-// WHERE "cpu" = 'cpu-total' AND "host" =~ /ipl-back.*/
+// WHERE "cpu" = 'cpu-total' AND "host" =~ /host.*/
 var query = '''
         SELECT "value"
-        FROM "chronograf"."autogen"."alerts"
-        WHERE "cpu" = 'cpu-total' AND "host" =~ /ipl-back.*/ AND "message" =~ /.*17:22.*/ 
+        FROM "kapacitor"."autogen"."alerts"
+        WHERE "cpu" = 'cpu-total' AND "host" =~ /host.*/ AND "message" =~ /.*17:22.*/ 
         ORDER BY DESC
         LIMIT 1
         '''

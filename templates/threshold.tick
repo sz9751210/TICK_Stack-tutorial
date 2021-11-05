@@ -53,7 +53,7 @@ var period = 1h
 
 var every = 5s
 
-var chatId = 'bot-chat-id'
+var chatId = 'chat-id'
 
 var data = batch
     |query('''
