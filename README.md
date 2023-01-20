@@ -1,5 +1,13 @@
-# 環境建置
-## telegraf設定
+# TICK-stack
+
+## 👨‍💻簡介
+🔰ELFK-stack：使用docker-compose建立起tick-stack的架構，撈取的指標從config/telegraf.conf設定，並送往influxdb從起來，chronograf為ui介面，查看撈取的時間序列指標狀態，最後kapacitor則是處理告警的部分．
+
+## 流程
+- ⚙️TICK-stack : telrgraf(送資料) -> influxdb(存資料) -> chronograf(ui) -> kapacitor(alert)
+
+## 環境建置
+### telegraf設定
 使用telegraf.conf設定輸出資料庫
 ```conf
 [[outputs.influxdb]]
@@ -8,7 +16,7 @@
   username = "admin"
   password = "admin" 
   ```
-## influxdb設定
+### influxdb設定
 使用configuration.env設定帳密以及資料庫
 ```conf
 # InfluxDB options
@@ -16,7 +24,7 @@ INFLUXDB_DB=telegraf
 INFLUXDB_ADMIN_USER=admin
 INFLUXDB_ADMIN_PASSWORD=admin
 ```
-## kapacitor設定
+### kapacitor設定
 使用kapacitor.conf
 * 設定讀取的資料庫
 ```conf
@@ -35,7 +43,7 @@ INFLUXDB_ADMIN_PASSWORD=admin
   url = "https://api.telegram.org/bot"
   token = "bot-token"
 ```
-## 啟動環境
+### 啟動環境
 ```shell
 docker-compose up
 ```
@@ -46,10 +54,10 @@ docker-compose up
 ![Alt text](./img/setup_influx.png)
 ![Alt text](./img/setup_kapacitor.png)
 
-# 告警設計
+## 告警設計
 參考cpu_alert.tick.example
-# 使用告警
-## 透過kapacitor
+## 使用告警
+### 透過kapacitor
 ```shell
 cd /var/lib/kapacitor
 # cpu_alert為任務task_id
@@ -64,7 +72,7 @@ kapacitor delete tasks cpu_alert
 # 列出所有任務
 kapacitor list tasks
 ```
-## 透過chronograf
+### 透過chronograf
 
 選到左邊的alerting -> write TICKscript
 ![Alt text](./img/alert.png)
@@ -80,10 +88,10 @@ alert history可查看告警訊息
 
 ============================
 
-## 查看alert寫回db訊息
+### 查看alert寫回db訊息
 ![Alt text](./img/chronograf.png)
 
-## 參考資料
+### 參考資料
 * https://github.com/sz9751210/docker-telegraf-influx-grafana-stack
 * https://www.influxdata.com/time-series-platform/kapacitor/
 * https://tanjiti.github.io/2018/12/18/%E5%BC%80%E6%BA%90kapacitor%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/
